@@ -10,6 +10,7 @@ export interface IArticle extends Document {
 export interface FetchedArticle {
     header: string;
     body: string;
+    url: string;
 }
 
 const ArticlSchema = new Schema({

@@ -20,18 +20,14 @@ export class ArticleService implements BaseService {
     }
 
     public async getArticles(): Promise<void> {
-        let dom = new JSDOM((await axios.get(this.cbsUrl)).data);
+        let res = await axios.get(this.cbsUrl);
 
-        const fetchedArticles: FetchedArticle[] = [];
+        if (res.status !== 200) throw new Error(`Can't fetch CBS front page...`);
 
-        fetchedArticles.push(...(await this.getCBS(dom)));
-        for (const article of fetchedArticles) {
-            Helpers.sleep(2000);
-            console.log(article);
-        }
+        await this.getCBS(new JSDOM(res.data));
     }
 
-    private async getCBS(dom: JSDOM): Promise<FetchedArticle[]> {
+    private async getCBS(dom: JSDOM): Promise<void> {
         let urls: string[] = [];
 
         dom.window.document
@@ -40,25 +36,32 @@ export class ArticleService implements BaseService {
 
         // Keep only unique urls
         urls = urls.filter((v, i, a) => a.indexOf(v) === i);
+        urls = urls.filter((url) => url.split('https://www.cbsnews.com/')[1].startsWith('news'));
 
-        const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-        bar1.start(urls.length, 0);
-        const articles: FetchedArticle[] = [];
+        const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+        progressBar.start(urls.length, 1);
 
         for (let i in urls) {
-            bar1.update(Number(i));
+            progressBar.update(Number(i) + 1);
+
+            if (await this.repository.exists({ url: urls[i] })) continue;
+
             const article = <FetchedArticle>{};
 
             // Sleep for 500 miliseconds to escape rate limiting
-            await Helpers.sleep(Helpers.random([1000, 1500]));
+            await Helpers.sleep(Helpers.random([500, 1000]));
 
             const res = await axios.get(urls[i]);
+
+            if (res.status !== 200) throw new Error(`Cannot get article ${urls[i]}`);
+
             const articleDom = new JSDOM(res.data);
 
             // Extract headline and body
-            article['header'] = articleDom.window.document.querySelector('.content__title').textContent;
+            article.header = articleDom.window.document.querySelector('.content__title').textContent;
+            article.url = urls[i];
 
-            let body = '';
+            article.body = '';
             articleDom.window.document
                 .querySelector('.content__body')
                 .querySelectorAll('p')
@@ -67,14 +70,14 @@ export class ArticleService implements BaseService {
                         !p.parentElement.classList.contains('content__footer') &&
                         !p.classList.contains('content__copyright')
                     ) {
-                        body += p.textContent;
+                        article.body += p.textContent;
                     }
                 });
-            article['body'] = body;
-            articles.push(article);
+
+            await this.repository.create(article);
         }
-        bar1.stop();
-        return articles;
+
+        progressBar.stop();
     }
 
     private getBBC(dom: JSDOM): string[] {

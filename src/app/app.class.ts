@@ -7,18 +7,18 @@ export class App {
 
     public async bootstrap(): Promise<void> {
         try {
-            // const conn = mongoose.connect(
-            //     Config.getInstance().dbURI,
-            //     {
-            //         useNewUrlParser: true,
-            //         useUnifiedTopology: true,
-            //     },
-            //     this.handleConnectionError
-            // );
+            const conn = await mongoose.connect(
+                Config.getInstance().dbURI,
+                {
+                    useNewUrlParser: true,
+                    useUnifiedTopology: true,
+                },
+                this.handleConnectionError
+            );
 
-            // mongoose.Promise = global.Promise;
+            mongoose.Promise = global.Promise;
 
-            // console.log('Succesfully connected to mongo');
+            console.log('Succesfully connected to mongo');
 
             const asrvc = new ArticleService();
 
