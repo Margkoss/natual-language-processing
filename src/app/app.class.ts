@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Config } from './config.class';
 import { ArticleService } from '@article/article.service';
+import { Logger } from '@common/logger/logger.class';
 
 export class App {
     constructor() {}
@@ -18,11 +19,11 @@ export class App {
 
             mongoose.Promise = global.Promise;
 
-            console.log('Succesfully connected to mongo');
+            Logger.log('Succesfully connected to mongo');
 
-            const asrvc = new ArticleService();
+            // const asrvc = new ArticleService();
 
-            await asrvc.getArticles();
+            // await asrvc.getArticles();
         } catch (e) {
             process.exit(-1);
         }
@@ -30,7 +31,7 @@ export class App {
 
     private handleConnectionError(error: mongoose.CallbackError) {
         if (error) {
-            console.log(error);
+            Logger.log(error.message);
         }
     }
 }
