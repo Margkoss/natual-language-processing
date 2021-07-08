@@ -7,6 +7,11 @@ export interface IArticle extends Document {
     pos_tags: string[];
 }
 
+export interface FetchedArticle {
+    header: string;
+    body: string;
+}
+
 const ArticlSchema = new Schema({
     url: String,
     header: String,
