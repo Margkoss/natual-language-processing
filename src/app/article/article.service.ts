@@ -20,6 +20,7 @@ export class ArticleService implements BaseService {
     }
 
     public async getArticles(): Promise<void> {
+        Logger.info('Start fetching articles');
         const [resCBS, resBBC] = await Promise.all([axios.get(this.cbsUrl), axios.get(this.bbcPage)]);
 
         if (resCBS.status !== 200 || resBBC.status !== 200) throw new Error(`Can't fetch front pages...`);
