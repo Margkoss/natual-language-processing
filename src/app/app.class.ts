@@ -21,17 +21,18 @@ export class App {
 
             Logger.log('Succesfully connected to mongo');
 
-            // const asrvc = new ArticleService();
+            const asrvc = new ArticleService();
 
-            // await asrvc.getArticles();
+            await asrvc.getArticles();
         } catch (e) {
+            Logger.error(e.message);
             process.exit(-1);
         }
     }
 
     private handleConnectionError(error: mongoose.CallbackError) {
         if (error) {
-            Logger.log(error.message);
+            Logger.error(error.message);
         }
     }
 }

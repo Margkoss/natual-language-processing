@@ -3,10 +3,10 @@ import { ArticleRepository } from './article.repository';
 import { Config } from '../config.class';
 import { JSDOM } from 'jsdom';
 import { Helpers } from '@common/helpers/helpers.namespace';
+import { FetchedArticle } from './article.model';
+import { Logger } from '@common/logger/logger.class';
 
 import axios from 'axios';
-import cliProgress from 'cli-progress';
-import { FetchedArticle } from './article.model';
 
 export class ArticleService implements BaseService {
     private repository: ArticleRepository;
@@ -20,11 +20,11 @@ export class ArticleService implements BaseService {
     }
 
     public async getArticles(): Promise<void> {
-        let res = await axios.get(this.cbsUrl);
+        const [resCBS, resBBC] = await Promise.all([axios.get(this.cbsUrl), axios.get(this.bbcPage)]);
 
-        if (res.status !== 200) throw new Error(`Can't fetch CBS front page...`);
+        if (resCBS.status !== 200 || resBBC.status !== 200) throw new Error(`Can't fetch front pages...`);
 
-        await this.getCBS(new JSDOM(res.data));
+        await Promise.all([this.getBBC(new JSDOM(resBBC.data)), this.getCBS(new JSDOM(resCBS.data))]);
     }
 
     private async getCBS(dom: JSDOM): Promise<void> {
@@ -38,30 +38,30 @@ export class ArticleService implements BaseService {
         urls = urls.filter((v, i, a) => a.indexOf(v) === i);
         urls = urls.filter((url) => url.split('https://www.cbsnews.com/')[1].startsWith('news'));
 
-        const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-        progressBar.start(urls.length, 1);
-
         for (let i in urls) {
-            progressBar.update(Number(i) + 1);
+            if (await this.repository.exists({ url: urls[i] })) {
+                Logger.log(`${urls[i]} already exists, skipping`);
 
-            if (await this.repository.exists({ url: urls[i] })) continue;
-
-            const article = <FetchedArticle>{};
+                continue;
+            }
 
             // Sleep for 500 miliseconds to escape rate limiting
             await Helpers.sleep(Helpers.random([500, 1000]));
 
             const res = await axios.get(urls[i]);
-
             if (res.status !== 200) throw new Error(`Cannot get article ${urls[i]}`);
+
+            Logger.log(`Fetching "${urls[i]}"`);
 
             const articleDom = new JSDOM(res.data);
 
             // Extract headline and body
-            article.header = articleDom.window.document.querySelector('.content__title').textContent;
-            article.url = urls[i];
+            const article = <FetchedArticle>{
+                header: articleDom.window.document.querySelector('.content__title').textContent,
+                url: urls[i],
+                body: '',
+            };
 
-            article.body = '';
             articleDom.window.document
                 .querySelector('.content__body')
                 .querySelectorAll('p')
@@ -76,11 +76,9 @@ export class ArticleService implements BaseService {
 
             await this.repository.create(article);
         }
-
-        progressBar.stop();
     }
 
-    private getBBC(dom: JSDOM): string[] {
+    private async getBBC(dom: JSDOM): Promise<void> {
         let urls: string[] = [];
 
         dom.window.document
@@ -88,6 +86,40 @@ export class ArticleService implements BaseService {
             .querySelectorAll('a')
             .forEach((el) => urls.push(`https://www.bbc.com${el.getAttribute('href')}`));
 
-        return urls;
+        // Keep only unique urls
+        urls = urls.filter((v, i, a) => a.indexOf(v) === i);
+        urls = urls.filter((url) => url.split(this.bbcPage)[1] && url.split(this.bbcPage)[1].startsWith('-'));
+
+        for (const i in urls) {
+            if (await this.repository.exists({ url: urls[i] })) {
+                Logger.log(`${urls[i]} already exists, skipping`);
+
+                continue;
+            }
+
+            // Throttle requests
+            await Helpers.sleep(Helpers.random([500, 1000]));
+
+            const res = await axios.get(urls[i]);
+            if (res.status !== 200) throw new Error(`Cannot fetch ${urls[i]}`);
+
+            Logger.log(`Fetching "${urls[i]}"`);
+
+            const dom = new JSDOM(res.data);
+            const article = <FetchedArticle>{
+                header: dom.window.document.querySelector('h1').textContent,
+                url: urls[i],
+                body: '',
+            };
+
+            dom.window.document
+                .querySelector('article')
+                .querySelectorAll('p')
+                .forEach((p) => {
+                    article.body += p.textContent;
+                });
+
+            await this.repository.create(article);
+        }
     }
 }
