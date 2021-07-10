@@ -6,7 +6,8 @@
     "scripts": {
         "build": "tsc",
         "start": "npm run build && node .",
-        "dev": "tsc --watch"
+        "dev": "tsc --watch",
+        "worker": "node dist/worker/main"
     },
     "author": "Markos Stamatakis",
     "license": "ISC",
@@ -20,6 +21,7 @@
     },
     "dependencies": {
         "axios": "^0.21.1",
+        "bullmq": "^1.37.1",
         "chalk": "^4.1.1",
         "cli-progress": "^3.9.0",
         "jsdom": "^16.6.0",
