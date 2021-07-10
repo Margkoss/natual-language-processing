@@ -39,4 +39,17 @@ export class Logger {
             ) + ` ${message} `
         );
     }
+
+    public static warn(message: string): void {
+        console.log(
+            chalk.yellowBright(
+                `[${new Date().toLocaleDateString('el', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                })} - ${new Date().toLocaleTimeString('el', {})}] : `
+            ) + ` ${message} `
+        );
+    }
 }
