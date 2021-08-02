@@ -29,4 +29,38 @@ export class Config {
     public get cbsUrl(): string {
         return 'https://www.cbsnews.com/world/';
     }
+
+    public get pos_tagger() {
+        return {
+            language: 'EN',
+            default_category: 'N',
+            default_category_capitalized: 'NNP',
+            closed_class_categories: [
+                'CD',
+                'CC',
+                'DT',
+                'EX',
+                'IN',
+                'LS',
+                'MD',
+                'PDT',
+                'POS',
+                'PRP',
+                'PRP$',
+                'RP',
+                'TO',
+                'UH',
+                'WDT',
+                'WP',
+                'WP$',
+                'WRB',
+            ],
+            open_class_categories: {
+                adjectives: ['JJ', 'JJR', 'JJS', 'RB', 'RBR', 'RBS'],
+                nouns: ['NN', 'NNS', 'NNP', 'NNPS'],
+                verbs: ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ'],
+                foreign: ['FW'],
+            },
+        };
+    }
 }

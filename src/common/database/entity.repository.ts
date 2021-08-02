@@ -1,4 +1,4 @@
-import { Document, FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { Document, FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 
 export abstract class EntityRepository<T extends Document> {
     constructor(protected readonly entityModel: Model<T>) {}
@@ -7,8 +7,12 @@ export abstract class EntityRepository<T extends Document> {
         return await this.entityModel.findOne(entityFilterQuery, { _id: 0, __v: 0, ...projection }).exec();
     }
 
-    public async find(entityFilterQuery: FilterQuery<T>, projection?: Record<string, unknown>): Promise<T[] | null> {
-        return await this.entityModel.find(entityFilterQuery, { _id: 0, __v: 0, ...projection }).exec();
+    public async find(
+        entityFilterQuery: FilterQuery<T>,
+        projection?: Record<string, unknown>,
+        options?: QueryOptions
+    ): Promise<T[] | null> {
+        return await this.entityModel.find(entityFilterQuery, { _id: 0, __v: 0, ...projection }, options).exec();
     }
 
     public async create(createEntityData: unknown): Promise<T> {

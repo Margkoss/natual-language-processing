@@ -2,15 +2,18 @@ import mongoose from 'mongoose';
 import { Config } from './config.class';
 import { ArticleService } from '@article/article.service';
 import { Logger } from '@common/logger/logger.class';
-import { QueueManager } from '@common/queues/queue.class';
+import { QueueManager } from './queue-manager/queue-manager.class';
 
 import cron from 'node-cron';
+import { NlpService } from './nlp/nlp.service';
 
 export class App {
     private readonly articleService: ArticleService;
+    private readonly nlpService: NlpService;
 
     constructor() {
         this.articleService = new ArticleService();
+        this.nlpService = new NlpService();
     }
 
     public async bootstrap(): Promise<void> {
@@ -25,10 +28,12 @@ export class App {
             );
             mongoose.Promise = global.Promise;
 
-            QueueManager.instance.initializeQueues();
+            // QueueManager.instance.initialize();
 
-            this.registerCronJobs();
+            // this.registerCronJobs();
             Logger.log('Application started, waiting for tasks');
+
+            this.nlpService.tagPartOfSpeech();
         } catch (e) {
             Logger.error(e.message);
             process.exit(-1);

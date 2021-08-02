@@ -1,3 +1,4 @@
+import { BaseManager } from '@common/interfaces/manager.base';
 import { Logger } from '@common/logger/logger.class';
 import { BulkJobOptions, Queue, QueueEvents } from 'bullmq';
 
@@ -7,7 +8,7 @@ interface JobData {
     options?: BulkJobOptions;
 }
 
-export class QueueManager {
+export class QueueManager implements BaseManager {
     public articleQueue: Queue;
     private articleEvents: QueueEvents;
 
@@ -23,7 +24,7 @@ export class QueueManager {
         return this._queue_instance;
     }
 
-    public initializeQueues(): void {
+    public initialize(): void {
         Logger.info('Initializing Article Queue');
         this.articleQueue = new Queue('Articles', {
             connection: {

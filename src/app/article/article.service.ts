@@ -1,21 +1,22 @@
 import { BaseService } from '@common/interfaces/service.base';
-import { ArticleRepository } from './article.repository';
 import { Config } from '../config.class';
 import { JSDOM } from 'jsdom';
-import { Helpers } from '@common/helpers/helpers.namespace';
-import { FetchedArticle } from './article.model';
 import { Logger } from '@common/logger/logger.class';
 
 import axios from 'axios';
-import { QueueManager } from '@common/queues/queue.class';
+import { ArticleRepository } from './article.repository';
+import { Helpers } from '@common/helpers/helpers.namespace';
+import { Article } from './article.model';
 
 export class ArticleService implements BaseService {
     private bbcPage: string;
     private cbsUrl: string;
+    private repository: ArticleRepository;
 
     constructor() {
         this.bbcPage = Config.getInstance().bbcUrl;
         this.cbsUrl = Config.getInstance().cbsUrl;
+        this.repository = new ArticleRepository();
     }
 
     public async getArticles(): Promise<Record<string, string>[]> {
