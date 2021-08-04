@@ -4,6 +4,7 @@ import { Config } from '../config.class';
 import { BrillPOSTagger, Lexicon, RuleSet, WordTokenizer } from 'natural';
 // @ts-ignore
 import lemmatize from 'wink-lemmatizer';
+import { POSTag } from '@article/article.model';
 
 export class NlpService implements BaseService {
     private articleRepository: ArticleRepository;
@@ -30,8 +31,7 @@ export class NlpService implements BaseService {
         for (const article of articles) {
             const tokenized = this.tokenizer.tokenize(article.body);
 
-            let taggedWords: { token: string; tag: string; lemma?: string }[] = (this.tagger.tag(tokenized) as any)
-                .taggedWords;
+            let taggedWords: POSTag[] = (this.tagger.tag(tokenized) as any).taggedWords;
 
             taggedWords = taggedWords
                 .filter((word) => !Config.getInstance().pos_tagger.closed_class_categories.includes(word.tag))
