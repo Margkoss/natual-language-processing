@@ -23,6 +23,7 @@ export class App {
                 {
                     useNewUrlParser: true,
                     useUnifiedTopology: true,
+                    useFindAndModify: false,
                 },
                 this.handleConnectionError
             );
@@ -41,6 +42,7 @@ export class App {
     }
 
     private registerCronJobs(): void {
+        // Register a cron job for fetching new articles
         cron.schedule('*/30 * * * *', async () => {
             const urls = await this.articleService.getArticles();
             QueueManager.instance.addArticleJobs(
@@ -54,6 +56,10 @@ export class App {
 
             Logger.log(`Added ${urls.length} article jobs`);
         });
+
+        // Register a cron job for POSTagging articles
+
+        // Register a cron job for creating manipulating lemmas to create inverted index
         Logger.info('Registered cron job for receiving new articles');
     }
 
