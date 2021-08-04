@@ -65,7 +65,7 @@ class WorkerManager {
                 .querySelector('article')
                 .querySelectorAll('p')
                 .forEach((p) => {
-                    article.body += p.textContent;
+                    article.body += '\n' + p.textContent;
                 });
 
             await this.repository.create(article);
@@ -105,7 +105,7 @@ class WorkerManager {
                         !p.parentElement.classList.contains('content__footer') &&
                         !p.classList.contains('content__copyright')
                     ) {
-                        article.body += p.textContent;
+                        article.body += '\n' + p.textContent;
                     }
                 });
 
