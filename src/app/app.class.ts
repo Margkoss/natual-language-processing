@@ -3,22 +3,25 @@ import { Config } from './config.class';
 import { ArticleService } from '@article/article.service';
 import { Logger } from '@common/logger/logger.class';
 import { QueueManager } from './queue-manager/queue-manager.class';
+import { NlpService } from './nlp/nlp.service';
+import { LemmaService } from './lemma/lemma.service';
 
 import cron from 'node-cron';
-import { NlpService } from './nlp/nlp.service';
 
 export class App {
     private readonly articleService: ArticleService;
     private readonly nlpService: NlpService;
+    private readonly lemmaService: LemmaService;
 
     constructor() {
         this.articleService = new ArticleService();
         this.nlpService = new NlpService();
+        this.lemmaService = new LemmaService();
     }
 
     public async bootstrap(): Promise<void> {
         try {
-            const conn = await mongoose.connect(
+            await mongoose.connect(
                 Config.getInstance().dbURI,
                 {
                     useNewUrlParser: true,
@@ -29,12 +32,19 @@ export class App {
             );
             mongoose.Promise = global.Promise;
 
+            await new Promise<void>((res, rej) => {
+                mongoose.connection.on('connected', function () {
+                    Logger.log('MongoDB connection established successfully');
+                    res();
+                });
+            });
+
             // QueueManager.instance.initialize();
 
             // this.registerCronJobs();
-            Logger.log('Application started, waiting for tasks');
 
-            this.nlpService.tagPartOfSpeech();
+            Logger.log('Application started, waiting for tasks');
+            await this.lemmaService.createLemmas();
         } catch (e) {
             Logger.error(e.message);
             process.exit(-1);
