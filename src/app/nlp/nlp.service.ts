@@ -4,7 +4,9 @@ import { Config } from '../config.class';
 import { BrillPOSTagger, Lexicon, RuleSet, WordTokenizer } from 'natural';
 // @ts-ignore
 import lemmatize from 'wink-lemmatizer';
-import { POSTag } from '@article/article.model';
+import { IArticle, POSTag } from '@article/article.model';
+import { QueueManager } from '@queue-manager/queue-manager.class';
+import { Logger } from '@common/logger/logger.class';
 
 export class NlpService implements BaseService {
     private articleRepository: ArticleRepository;
@@ -24,26 +26,36 @@ export class NlpService implements BaseService {
         this.tagger = new BrillPOSTagger(this.lexicon, this.ruleSet);
     }
 
-    public async tagPartOfSpeech(): Promise<void> {
+    public async addTagJobs(): Promise<void> {
         // Only fetch articles that have an empty POSTag array
-        const articles = await this.articleRepository.find({ pos_tags: { $exists: true, $eq: [] } }, { _id: 1 });
+        const articles = await this.articleRepository.listOfIds({ pos_tags: { $exists: true, $eq: [] } });
 
-        for (const article of articles) {
-            const tokenized = this.tokenizer.tokenize(article.body);
+        await QueueManager.instance.addTaggingJobs(
+            articles.map((article) => {
+                return { name: `job ${article}`, data: { id: article }, options: {} };
+            })
+        );
 
-            let taggedWords: POSTag[] = (this.tagger.tag(tokenized) as any).taggedWords;
-
-            taggedWords = taggedWords
-                .filter((word) => !Config.getInstance().pos_tagger.closed_class_categories.includes(word.tag))
-                .map((word) => {
-                    return { ...word, lemma: this.lemmaFromPOSTag(word.token, word.tag) };
-                });
-
-            await this.articleRepository.findOneAndUpdate({ _id: article._id }, { pos_tags: taggedWords });
-        }
+        Logger.log(`Added ${articles.length} tagging jobs`);
     }
 
-    public lemmaFromPOSTag(token: string, tag: string) {
+    public async tagArticle(id: string): Promise<void> {
+        const article = await this.articleRepository.findOne({ _id: id });
+
+        const tokenized = this.tokenizer.tokenize(article.body);
+
+        let taggedWords: POSTag[] = (this.tagger.tag(tokenized) as any).taggedWords;
+
+        taggedWords = taggedWords
+            .filter((word) => !Config.getInstance().pos_tagger.closed_class_categories.includes(word.tag))
+            .map((word) => {
+                return { ...word, lemma: this.lemmaFromPOSTag(word.token, word.tag) };
+            });
+
+        await this.articleRepository.findOneAndUpdate({ _id: id }, { pos_tags: taggedWords });
+    }
+
+    private lemmaFromPOSTag(token: string, tag: string) {
         // Convert to lower case
         token = token.toLowerCase();
 

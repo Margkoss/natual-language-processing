@@ -34,6 +34,9 @@
     },
     "_moduleAliases": {
         "@common": "dist/common/",
-        "@article": "dist/app/article"
+        "@article": "dist/app/article",
+        "@nlp": "dist/app/nlp",
+        "@lemma": "dist/app/lemma",
+        "@queue-manager": "dist/app/queue-manager"
     }
 }

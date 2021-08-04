@@ -8,19 +8,29 @@ import { Helpers } from '@common/helpers/helpers.namespace';
 import axios from 'axios';
 import { FetchedArticle } from '@article/article.model';
 import { JSDOM } from 'jsdom';
+import { BaseManager } from '@common/interfaces/manager.base';
+import { NlpService } from '@nlp/nlp.service';
+import { LemmaService } from '@lemma/lemma.service';
 
-class WorkerManager {
+class WorkerManager implements BaseManager {
     private repository: ArticleRepository;
+    private nlpService: NlpService;
+    private lemmaService: LemmaService;
     private articleWorker: Worker;
+    private tagWorker: Worker;
+    private lemmaWorker: Worker;
 
     constructor() {
         this.repository = new ArticleRepository();
+        this.nlpService = new NlpService();
+        this.lemmaService = new LemmaService();
     }
 
     public initialize(): void {
         mongoose.connect(Config.getInstance().dbURI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
+            useFindAndModify: false,
         });
         mongoose.Promise = global.Promise;
 
@@ -30,6 +40,10 @@ class WorkerManager {
     private registerWorkers(): void {
         this.articleWorker = new Worker('Articles', this.handleArticleJobs.bind(this));
         Logger.log('Registered Articles Worker');
+        this.tagWorker = new Worker('Tags', this.handleTagJobs.bind(this));
+        Logger.log('Registered Tags Worker');
+        this.lemmaWorker = new Worker('Lemmas', this.handleLemmaJobs.bind(this));
+        Logger.log('Registered Lemmas Worker');
     }
 
     private async handleArticleJobs(job: Job): Promise<void> {
@@ -65,7 +79,7 @@ class WorkerManager {
                 .querySelector('article')
                 .querySelectorAll('p')
                 .forEach((p) => {
-                    article.body += '\n' + p.textContent;
+                    article.body += `\n${p.textContent}`;
                 });
 
             await this.repository.create(article);
@@ -105,12 +119,28 @@ class WorkerManager {
                         !p.parentElement.classList.contains('content__footer') &&
                         !p.classList.contains('content__copyright')
                     ) {
-                        article.body += '\n' + p.textContent;
+                        article.body += `\n${p.textContent}`;
                     }
                 });
 
             await this.repository.create(article);
         }
+    }
+
+    private async handleTagJobs(job: Job): Promise<void> {
+        const { data } = job;
+
+        Logger.log(`Handling POSTagging job -> ${job.name} on queue ${job.queueName}`);
+
+        await this.nlpService.tagArticle(data.id);
+    }
+
+    private async handleLemmaJobs(job: Job): Promise<void> {
+        const { id } = job.data;
+
+        Logger.log(`Handling Lemma job -> ${job.name} on queue ${job.queueName}`);
+
+        await this.lemmaService.createLemmaFromArticle(id);
     }
 }
 

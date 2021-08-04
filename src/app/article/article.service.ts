@@ -6,7 +6,8 @@ import { Logger } from '@common/logger/logger.class';
 import axios from 'axios';
 import { ArticleRepository } from './article.repository';
 import { Helpers } from '@common/helpers/helpers.namespace';
-import { Article } from './article.model';
+import { Article } from '@article/article.model';
+import { QueueManager } from '@queue-manager/queue-manager.class';
 
 export class ArticleService implements BaseService {
     private bbcPage: string;
@@ -17,6 +18,21 @@ export class ArticleService implements BaseService {
         this.bbcPage = Config.getInstance().bbcUrl;
         this.cbsUrl = Config.getInstance().cbsUrl;
         this.repository = new ArticleRepository();
+    }
+
+    public async addArticleJobs(): Promise<void> {
+        const urls = await this.getArticles();
+
+        await QueueManager.instance.addArticleJobs(
+            urls.map((url, index) => {
+                return {
+                    name: `job ${index}`,
+                    data: url,
+                };
+            })
+        );
+
+        Logger.log(`Added ${urls.length} article jobs`);
     }
 
     public async getArticles(): Promise<Record<string, string>[]> {

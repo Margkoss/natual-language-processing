@@ -1,6 +1,8 @@
 import { ArticleRepository } from '@article/article.repository';
 import { BaseService } from '@common/interfaces/service.base';
 import { Logger } from '@common/logger/logger.class';
+import { QueueManager } from '@queue-manager/queue-manager.class';
+import { Job } from 'bullmq';
 import { LemmaRepository } from './lemma.repository';
 
 export class LemmaService implements BaseService {
@@ -12,20 +14,24 @@ export class LemmaService implements BaseService {
         this.lemmaRepository = new LemmaRepository();
     }
 
-    public async createLemmas(): Promise<void> {
+    public async addLemmaJobs(): Promise<void> {
         // Fetch all articles with POSTags
-        const start = Date.now();
-
         const articles = await this.articleRepository.listOfIds({ pos_tags: { $exists: true, $ne: [] } });
 
-        for (const id of articles) {
-            await this.createLemmaFromArticle(id);
-        }
+        await QueueManager.instance.addLemmaJobs(
+            articles.map((article) => {
+                return {
+                    name: `job ${article}`,
+                    data: { id: article },
+                    options: {},
+                };
+            })
+        );
 
-        Logger.log(`Finished processing ${articles.length} articles in ${(Date.now() - start) / 1000} seconds`);
+        Logger.log(`Added ${articles.length} lemma jobs`);
     }
 
-    private async createLemmaFromArticle(id: string): Promise<void> {
+    public async createLemmaFromArticle(id: string): Promise<void> {
         const article = await this.articleRepository.findOne({ _id: id }, { _id: 1 });
 
         if (!article.pos_tags.length) return;

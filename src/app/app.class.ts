@@ -21,30 +21,13 @@ export class App {
 
     public async bootstrap(): Promise<void> {
         try {
-            await mongoose.connect(
-                Config.getInstance().dbURI,
-                {
-                    useNewUrlParser: true,
-                    useUnifiedTopology: true,
-                    useFindAndModify: false,
-                },
-                this.handleConnectionError
-            );
-            mongoose.Promise = global.Promise;
+            await this.connectToDb();
 
-            await new Promise<void>((res, rej) => {
-                mongoose.connection.on('connected', function () {
-                    Logger.log('MongoDB connection established successfully');
-                    res();
-                });
-            });
+            QueueManager.instance.initialize();
 
-            // QueueManager.instance.initialize();
-
-            // this.registerCronJobs();
+            this.registerCronJobs();
 
             Logger.log('Application started, waiting for tasks');
-            await this.lemmaService.createLemmas();
         } catch (e) {
             Logger.error(e.message);
             process.exit(-1);
@@ -53,24 +36,36 @@ export class App {
 
     private registerCronJobs(): void {
         // Register a cron job for fetching new articles
-        cron.schedule('*/30 * * * *', async () => {
-            const urls = await this.articleService.getArticles();
-            QueueManager.instance.addArticleJobs(
-                urls.map((url, index) => {
-                    return {
-                        name: `job ${index}`,
-                        data: url,
-                    };
-                })
-            );
-
-            Logger.log(`Added ${urls.length} article jobs`);
-        });
+        cron.schedule('*/30 * * * *', async () => await this.articleService.addArticleJobs());
+        Logger.info('Registered cron job for receiving new articles');
 
         // Register a cron job for POSTagging articles
+        cron.schedule('*/10 * * * *', async () => await this.nlpService.addTagJobs());
+        Logger.info('Registered cron job for POSTagging Articles in db');
 
         // Register a cron job for creating manipulating lemmas to create inverted index
-        Logger.info('Registered cron job for receiving new articles');
+        cron.schedule('*/5 * * * *', async () => await this.lemmaService.addLemmaJobs());
+        Logger.info('Registered cron job for creating Lemmas in db');
+    }
+
+    private async connectToDb(): Promise<void> {
+        mongoose.connect(
+            Config.getInstance().dbURI,
+            {
+                useNewUrlParser: true,
+                useUnifiedTopology: true,
+                useFindAndModify: false,
+            },
+            this.handleConnectionError
+        );
+        mongoose.Promise = global.Promise;
+
+        await new Promise<void>((res, rej) => {
+            mongoose.connection.on('connected', function () {
+                Logger.log('MongoDB connection established successfully');
+                res();
+            });
+        });
     }
 
     private handleConnectionError(error: mongoose.CallbackError) {
