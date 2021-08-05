@@ -21,7 +21,17 @@ export class ArticleService implements BaseService {
     }
 
     public async addArticleJobs(): Promise<void> {
+        // Create an article limit
+        const articleCount = await this.repository.count();
+
+        if (articleCount >= 10) {
+            Logger.warn(`Reached article goal, not adding others`);
+            return;
+        }
+
         const urls = await this.getArticles();
+        // "Cut" array to fit max size
+        urls.length = urls.length < 10 - articleCount ? urls.length : 10 - articleCount;
 
         await QueueManager.instance.addArticleJobs(
             urls.map((url, index) => {

@@ -21,4 +21,8 @@ export class ArticleRepository extends EntityRepository<IArticle> {
     ): Promise<string[]> {
         return await this.article.find(filterQuery, { _id: 0, __v: 0, ...projection }, options).distinct('_id');
     }
+
+    public async count(): Promise<number> {
+        return await this.article.count();
+    }
 }
