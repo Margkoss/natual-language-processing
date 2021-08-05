@@ -59,7 +59,7 @@ export class LemmaService implements BaseService {
                 const newLemma = await this.lemmaRepository.create({
                     lemma: lemma,
                     appearances: numAppearances,
-                    articles: { [id]: numAppearances },
+                    articles: { [id]: { appearances: numAppearances } },
                 });
             }
         }
