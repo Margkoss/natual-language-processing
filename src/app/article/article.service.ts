@@ -1,5 +1,5 @@
 import { BaseService } from '@common/interfaces/service.base';
-import { Config } from '../config.class';
+import { Config } from '@app/config.class';
 import { JSDOM } from 'jsdom';
 import { Logger } from '@common/logger/logger.class';
 

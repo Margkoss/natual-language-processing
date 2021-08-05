@@ -1,6 +1,6 @@
 import 'module-alias/register';
 import { Logger } from '@common/logger/logger.class';
-import { Config } from '../app/config.class';
+import { Config } from '@app/config.class';
 import { Job, Worker } from 'bullmq';
 import mongoose from 'mongoose';
 import { ArticleRepository } from '@article/article.repository';
@@ -16,9 +16,11 @@ class WorkerManager implements BaseManager {
     private repository: ArticleRepository;
     private nlpService: NlpService;
     private lemmaService: LemmaService;
+
     private articleWorker: Worker;
     private tagWorker: Worker;
     private lemmaWorker: Worker;
+    private inverseIndexWorker: Worker;
 
     constructor() {
         this.repository = new ArticleRepository();
@@ -38,12 +40,22 @@ class WorkerManager implements BaseManager {
     }
 
     private registerWorkers(): void {
-        this.articleWorker = new Worker('Articles', this.handleArticleJobs.bind(this));
+        this.articleWorker = new Worker('Articles', this.handleArticleJobs.bind(this), {
+            connection: { host: Config.getInstance().cacheHost },
+        });
         Logger.log('Registered Articles Worker');
-        this.tagWorker = new Worker('Tags', this.handleTagJobs.bind(this));
+        this.tagWorker = new Worker('Tags', this.handleTagJobs.bind(this), {
+            connection: { host: Config.getInstance().cacheHost },
+        });
         Logger.log('Registered Tags Worker');
-        this.lemmaWorker = new Worker('Lemmas', this.handleLemmaJobs.bind(this));
+        this.lemmaWorker = new Worker('Lemmas', this.handleLemmaJobs.bind(this), {
+            connection: { host: Config.getInstance().cacheHost },
+        });
         Logger.log('Registered Lemmas Worker');
+        this.inverseIndexWorker = new Worker('Inverse Index', this.handleInverseIndexJobs.bind(this), {
+            connection: { host: Config.getInstance().cacheHost },
+        });
+        Logger.log('Registered Inverse Index Worker');
     }
 
     private async handleArticleJobs(job: Job): Promise<void> {
@@ -141,6 +153,14 @@ class WorkerManager implements BaseManager {
         Logger.log(`Handling Lemma job -> ${job.name} on queue ${job.queueName}`);
 
         await this.lemmaService.createLemmaFromArticle(id);
+    }
+
+    private async handleInverseIndexJobs(job: Job): Promise<void> {
+        const { id } = job.data;
+
+        Logger.log(`Handling Inverse Index job -> ${job.name} on queue ${job.queueName}`);
+
+        await this.nlpService.TFIDFeachLemma(id);
     }
 }
 

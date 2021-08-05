@@ -3,6 +3,7 @@ import { BaseService } from '@common/interfaces/service.base';
 import { Logger } from '@common/logger/logger.class';
 import { QueueManager } from '@queue-manager/queue-manager.class';
 import { Job } from 'bullmq';
+import { ILemma } from './lemma.model';
 import { LemmaRepository } from './lemma.repository';
 
 export class LemmaService implements BaseService {
@@ -51,19 +52,39 @@ export class LemmaService implements BaseService {
 
                 // Set the total number of appearances and appearances in the article
                 dbLemma.set(`articles.${id}.appearances`, numAppearances);
-                dbLemma.appearances += numAppearances;
 
                 const newLemma = await dbLemma.save();
             } else {
                 // If the lemma doesn't exist create a new one
+
+                /**
+                 * Avoid adding complete number of apperances here as
+                 * opossed to asynchrounsly because it will create
+                 * race conditions when many lemmas are counted in parallel
+                 */
+
                 const newLemma = await this.lemmaRepository.create({
                     lemma: lemma,
-                    appearances: numAppearances,
+                    appearances: 0,
                     articles: { [id]: { appearances: numAppearances } },
                 });
             }
         }
 
         Logger.info(`Finished processing ${lemmas.length} lemmas`);
+    }
+
+    public async updateAppearances(lemma: ILemma): Promise<ILemma> {
+        let sum = 0;
+        for (const article in lemma.articles) {
+            sum += lemma.articles[article].appearances;
+        }
+
+        if (sum !== lemma.appearances) {
+            lemma.appearances = sum;
+            lemma = await lemma.save();
+        }
+
+        return lemma;
     }
 }

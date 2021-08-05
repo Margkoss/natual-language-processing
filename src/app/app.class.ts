@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
-import { Config } from './config.class';
+import { Config } from '@app/config.class';
 import { ArticleService } from '@article/article.service';
 import { Logger } from '@common/logger/logger.class';
-import { QueueManager } from './queue-manager/queue-manager.class';
-import { NlpService } from './nlp/nlp.service';
-import { LemmaService } from './lemma/lemma.service';
+import { QueueManager } from '@queue-manager/queue-manager.class';
+import { NlpService } from '@nlp/nlp.service';
+import { LemmaService } from '@lemma/lemma.service';
 
 import cron from 'node-cron';
 
@@ -40,12 +40,16 @@ export class App {
         Logger.info('Registered cron job for receiving new articles');
 
         // Register a cron job for POSTagging articles
-        cron.schedule('*/10 * * * *', async () => await this.nlpService.addTagJobs());
+        cron.schedule('*/15 * * * *', async () => await this.nlpService.addTagJobs());
         Logger.info('Registered cron job for POSTagging Articles in db');
 
         // Register a cron job for creating manipulating lemmas to create inverted index
-        cron.schedule('*/5 * * * *', async () => await this.lemmaService.addLemmaJobs());
+        cron.schedule('*/10 * * * *', async () => await this.lemmaService.addLemmaJobs());
         Logger.info('Registered cron job for creating Lemmas in db');
+
+        // Register a cron job for updating the inverted index
+        cron.schedule('*/5 * * * *', async () => await this.nlpService.createInvertedIndexJobs());
+        Logger.info('Registered cron job for creating Inverted Index in db');
     }
 
     private async connectToDb(): Promise<void> {

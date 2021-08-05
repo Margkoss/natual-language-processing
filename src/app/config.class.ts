@@ -63,4 +63,8 @@ export class Config {
             },
         };
     }
+
+    public get cacheHost(): string {
+        return 'localhost';
+    }
 }
