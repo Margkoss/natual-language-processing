@@ -23,6 +23,6 @@ export class ArticleRepository extends EntityRepository<IArticle> {
     }
 
     public async count(): Promise<number> {
-        return await this.article.count();
+        return await this.article.countDocuments();
     }
 }

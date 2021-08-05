@@ -87,4 +87,48 @@ export class LemmaService implements BaseService {
 
         return lemma;
     }
+
+    public async query_lemmas(...lemmas: string[]) {
+        try {
+            // Prepare database queries
+            let query = {
+                $or: lemmas.map((lemma) => {
+                    return { name: new RegExp(lemma) };
+                }),
+            };
+
+            // Get lemmas
+            const search_results = await this.lemmaRepository.find(query, {
+                lemma: 1,
+                articles: 1,
+                _id: 0,
+            });
+
+            const result = search_results.map((r) => {
+                return {
+                    lemma: r.lemma,
+                    documents: Object.entries(r.articles)
+                        .sort((a, b) => {
+                            return b[1].weight - a[1].weight;
+                        })
+                        .map((entry) => {
+                            return { id: entry[0], weight: entry[1].weight };
+                        }),
+                };
+            });
+
+            if (result.length !== 0) {
+                console.log(`Found the following ${result.length} lemmas`);
+            } else {
+                console.log('No lemmas found');
+            }
+
+            result.forEach((entry) => {
+                console.log('Lemma:', entry.lemma);
+                console.table(entry.documents);
+            });
+        } catch (error) {
+            throw error;
+        }
+    }
 }
