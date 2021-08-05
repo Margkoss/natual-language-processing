@@ -37,6 +37,7 @@
         "@article": "dist/app/article",
         "@nlp": "dist/app/nlp",
         "@lemma": "dist/app/lemma",
-        "@queue-manager": "dist/app/queue-manager"
+        "@queue-manager": "dist/app/queue-manager",
+        "@app": "dist/app"
     }
 }
