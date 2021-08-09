@@ -1,7 +1,7 @@
 import { ArticleRepository } from '@article/article.repository';
 import { BaseService } from '@common/interfaces/service.base';
 import { Config } from '@app/config.class';
-import { BrillPOSTagger, Lexicon, RuleSet, WordTokenizer, TfIdf } from 'natural';
+import { BrillPOSTagger, Lexicon, RuleSet, WordTokenizer, TfIdf, PorterStemmer } from 'natural';
 // @ts-ignore
 import lemmatize from 'wink-lemmatizer';
 import { IArticle, POSTag } from '@article/article.model';
@@ -114,5 +114,10 @@ export class NlpService implements BaseService {
             }
         });
         await lemma.save();
+    }
+
+    public stemText(text: string): string[] {
+        const tokenizedText = this.tokenizer.tokenize(text);
+        return tokenizedText.map((word) => PorterStemmer.stem(word.toLowerCase()));
     }
 }

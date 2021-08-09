@@ -22,10 +22,15 @@ ${chalk.blueBright(`
 
 
 Available commands:
-- ${chalk.yellow('query')} <list of words>  -> queries lemmas from inverted index
-- ${chalk.yellow('test')}                   -> Tests response time
-- ${chalk.yellow('clear')}                  -> Clears console window
-- ${chalk.yellow('help')}                   -> Displays help information about commands
+- ${chalk.yellow('query')} <comma seperated lemmas>             ${chalk.bold('-> queries lemmas from inverted index')}
+- ${chalk.yellow('test')}                                       ${chalk.bold('-> Tests response time')}
+- ${chalk.yellow('clear')}                                      ${chalk.bold('-> Clears console window')}
+- ${chalk.yellow('help')}                                       ${chalk.bold(
+        '-> Displays help information about commands'
+    )}
+- ${chalk.yellow('train')} <path to directory>                  ${chalk.bold('-> Trains with the directory given')} 
+- ${chalk.yellow('exit')}                                       ${chalk.bold('-> Exits the program')}
+
                 `;
 
     export const queries = [

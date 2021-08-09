@@ -44,11 +44,11 @@ export class App {
         Logger.info('Registered cron job for receiving new articles');
 
         // Register a cron job for POSTagging articles
-        cron.schedule('*/15 * * * *', async () => await this.nlpService.addTagJobs());
+        cron.schedule('* * * * *', async () => await this.nlpService.addTagJobs());
         Logger.info('Registered cron job for POSTagging Articles in db');
 
         // Register a cron job for creating manipulating lemmas to create inverted index
-        cron.schedule('*/10 * * * *', async () => await this.lemmaService.addLemmaJobs());
+        cron.schedule('* * * * *', async () => await this.lemmaService.addLemmaJobs());
         Logger.info('Registered cron job for creating Lemmas in db');
 
         // Register a cron job for updating the inverted index

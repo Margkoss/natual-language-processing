@@ -17,7 +17,7 @@ export class LemmaService implements BaseService {
 
     public async addLemmaJobs(): Promise<void> {
         // Fetch all articles with POSTags
-        const articles = await this.articleRepository.listOfIds({ pos_tags: { $exists: true, $ne: [] } });
+        const articles = await this.articleRepository.listOfIds({ pos_tags: { $exists: true, $eq: [] } });
 
         await QueueManager.instance.addLemmaJobs(
             articles.map((article) => {

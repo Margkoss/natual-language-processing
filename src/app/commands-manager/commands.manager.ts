@@ -1,15 +1,19 @@
+import { DocumentService } from '@app/document/document.service';
 import { Helpers } from '@common/helpers/helpers.namespace';
 import { BaseManager } from '@common/interfaces/manager.base';
 import { Logger } from '@common/logger/logger.class';
 import { LemmaService } from '@lemma/lemma.service';
+import path from 'path';
 
 export class CommandsManager implements BaseManager {
     private static _instance: CommandsManager;
 
     private readonly lemmaService: LemmaService;
+    private readonly documentService: DocumentService;
 
     private constructor() {
         this.lemmaService = new LemmaService();
+        this.documentService = new DocumentService();
     }
 
     public static get instance(): CommandsManager {
@@ -46,6 +50,16 @@ export class CommandsManager implements BaseManager {
 
             if (command.startsWith('help')) {
                 console.log(Helpers.landingText);
+            }
+
+            if (command.startsWith('train')) {
+                const documentsDirectory = command.split(' ')[1].trim();
+
+                this.documentService.train(path.resolve(documentsDirectory));
+            }
+
+            if (command.startsWith('exit')) {
+                process.exit(0);
             }
         });
 
