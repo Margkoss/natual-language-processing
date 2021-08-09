@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { randomInt } from 'crypto';
 
 export namespace Helpers {
@@ -8,6 +9,24 @@ export namespace Helpers {
     export function random(minMax: [number, number]): number {
         return randomInt(minMax[0], minMax[1]);
     }
+
+    export const landingText = `
+${chalk.blueBright(`
+███╗░░██╗██╗░░░░░██████╗░  ██████╗░██████╗░░█████╗░░░░░░██╗███████╗░█████╗░████████╗
+████╗░██║██║░░░░░██╔══██╗  ██╔══██╗██╔══██╗██╔══██╗░░░░░██║██╔════╝██╔══██╗╚══██╔══╝
+██╔██╗██║██║░░░░░██████╔╝  ██████╔╝██████╔╝██║░░██║░░░░░██║█████╗░░██║░░╚═╝░░░██║░░░
+██║╚████║██║░░░░░██╔═══╝░  ██╔═══╝░██╔══██╗██║░░██║██╗░░██║██╔══╝░░██║░░██╗░░░██║░░░
+██║░╚███║███████╗██║░░░░░  ██║░░░░░██║░░██║╚█████╔╝╚█████╔╝███████╗╚█████╔╝░░░██║░░░
+╚═╝░░╚══╝╚══════╝╚═╝░░░░░  ╚═╝░░░░░╚═╝░░╚═╝░╚════╝░░╚════╝░╚══════╝░╚════╝░░░░╚═╝░░░
+`)}                                
+
+
+Available commands:
+- ${chalk.yellow('query')} <list of words>  -> queries lemmas from inverted index
+- ${chalk.yellow('test')}                   -> Tests response time
+- ${chalk.yellow('clear')}                  -> Clears console window
+- ${chalk.yellow('help')}                   -> Displays help information about commands
+                `;
 
     export const queries = [
         ['read'],

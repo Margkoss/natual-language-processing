@@ -88,7 +88,7 @@ export class LemmaService implements BaseService {
         return lemma;
     }
 
-    public async queryLemmas(...lemmas: string[]): Promise<void> {
+    public async queryLemmas(verbose = false, ...lemmas: string[]): Promise<void> {
         try {
             // Prepare database queries
             let query = {
@@ -113,29 +113,31 @@ export class LemmaService implements BaseService {
                 };
             });
 
-            // if (result.length !== 0) {
-            //     console.log(`Found the following ${result.length} lemmas`);
-            // } else {
-            //     console.log('No lemmas found');
-            // }
+            if (verbose) {
+                if (result.length !== 0) {
+                    Logger.log(`Found the following ${result.length} lemmas`);
+                } else {
+                    Logger.warn('No lemmas found');
+                }
 
-            // result.forEach((entry) => {
-            //     console.log('Lemma:', entry.lemma);
-            //     console.table(entry.documents);
-            // });
+                result.forEach((entry) => {
+                    console.log('Lemma:', entry.lemma);
+                    console.table(entry.documents);
+                });
+            }
         } catch (error) {
             throw error;
         }
     }
 
-    public async test_response_time(queries: string[][]) {
+    public async testResponseTime(queries: string[][]) {
         try {
             let response_times = [];
             for (let i = 0; i < queries.length; i++) {
                 const query = queries[i];
 
                 const start = Date.now();
-                await this.queryLemmas(...query);
+                await this.queryLemmas(false, ...query);
                 const diff = Date.now() - start;
 
                 response_times.push(diff);

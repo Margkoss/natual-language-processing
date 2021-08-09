@@ -8,6 +8,7 @@ import { LemmaService } from '@lemma/lemma.service';
 
 import cron from 'node-cron';
 import { Helpers } from '@common/helpers/helpers.namespace';
+import { CommandsManager } from './commands-manager/commands.manager';
 
 export class App {
     private readonly articleService: ArticleService;
@@ -22,14 +23,13 @@ export class App {
 
     public async bootstrap(): Promise<void> {
         try {
+            console.log(Helpers.landingText);
+
             await this.connectToDb();
-
-            QueueManager.instance.initialize();
-
             // this.registerCronJobs();
 
-            await this.lemmaService.test_response_time(Helpers.queries);
-            process.exit(0);
+            CommandsManager.instance.initialize();
+            QueueManager.instance.initialize();
 
             Logger.log('Application started, waiting for tasks');
         } catch (e) {
