@@ -7,6 +7,7 @@ import { NlpService } from '@nlp/nlp.service';
 import { LemmaService } from '@lemma/lemma.service';
 
 import cron from 'node-cron';
+import { Helpers } from '@common/helpers/helpers.namespace';
 
 export class App {
     private readonly articleService: ArticleService;
@@ -25,7 +26,10 @@ export class App {
 
             QueueManager.instance.initialize();
 
-            this.registerCronJobs();
+            // this.registerCronJobs();
+
+            await this.lemmaService.test_response_time(Helpers.queries);
+            process.exit(0);
 
             Logger.log('Application started, waiting for tasks');
         } catch (e) {
@@ -36,7 +40,7 @@ export class App {
 
     private registerCronJobs(): void {
         // Register a cron job for fetching new articles
-        cron.schedule('*/30 * * * *', async () => await this.articleService.addArticleJobs());
+        cron.schedule('* * * * *', async () => await this.articleService.addArticleJobs());
         Logger.info('Registered cron job for receiving new articles');
 
         // Register a cron job for POSTagging articles

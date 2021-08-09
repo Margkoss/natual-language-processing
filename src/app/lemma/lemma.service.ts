@@ -88,21 +88,17 @@ export class LemmaService implements BaseService {
         return lemma;
     }
 
-    public async query_lemmas(...lemmas: string[]) {
+    public async queryLemmas(...lemmas: string[]): Promise<void> {
         try {
             // Prepare database queries
             let query = {
                 $or: lemmas.map((lemma) => {
-                    return { name: new RegExp(lemma) };
+                    return { lemma: new RegExp(lemma) };
                 }),
             };
 
             // Get lemmas
-            const search_results = await this.lemmaRepository.find(query, {
-                lemma: 1,
-                articles: 1,
-                _id: 0,
-            });
+            const search_results = await this.lemmaRepository.find(query);
 
             const result = search_results.map((r) => {
                 return {
@@ -117,16 +113,38 @@ export class LemmaService implements BaseService {
                 };
             });
 
-            if (result.length !== 0) {
-                console.log(`Found the following ${result.length} lemmas`);
-            } else {
-                console.log('No lemmas found');
+            // if (result.length !== 0) {
+            //     console.log(`Found the following ${result.length} lemmas`);
+            // } else {
+            //     console.log('No lemmas found');
+            // }
+
+            // result.forEach((entry) => {
+            //     console.log('Lemma:', entry.lemma);
+            //     console.table(entry.documents);
+            // });
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    public async test_response_time(queries: string[][]) {
+        try {
+            let response_times = [];
+            for (let i = 0; i < queries.length; i++) {
+                const query = queries[i];
+
+                const start = Date.now();
+                await this.queryLemmas(...query);
+                const diff = Date.now() - start;
+
+                response_times.push(diff);
             }
 
-            result.forEach((entry) => {
-                console.log('Lemma:', entry.lemma);
-                console.table(entry.documents);
-            });
+            const average_time = response_times.reduce((total, time) => total + time) / response_times.length;
+
+            console.log('Average query response time:', average_time, 'ms');
+            return;
         } catch (error) {
             throw error;
         }
