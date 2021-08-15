@@ -31,11 +31,8 @@ export class NlpService implements BaseService {
 
         // Initialize natural library stuff
         this.tokenizer = new WordTokenizer();
-        this.lexicon = new Lexicon(
-            Config.getInstance().pos_tagger.language,
-            Config.getInstance().pos_tagger.default_category
-        );
-        this.ruleSet = new RuleSet(Config.getInstance().pos_tagger.language);
+        this.lexicon = new Lexicon(Config.instance.pos_tagger.language, Config.instance.pos_tagger.default_category);
+        this.ruleSet = new RuleSet(Config.instance.pos_tagger.language);
         this.tagger = new BrillPOSTagger(this.lexicon, this.ruleSet);
     }
 
@@ -60,7 +57,7 @@ export class NlpService implements BaseService {
         let taggedWords: POSTag[] = (this.tagger.tag(tokenized) as any).taggedWords;
 
         taggedWords = taggedWords
-            .filter((word) => !Config.getInstance().pos_tagger.closed_class_categories.includes(word.tag))
+            .filter((word) => !Config.instance.pos_tagger.closed_class_categories.includes(word.tag))
             .map((word) => {
                 return { ...word, lemma: this.lemmaFromPOSTag(word.token, word.tag) };
             });
@@ -73,9 +70,9 @@ export class NlpService implements BaseService {
         token = token.toLowerCase();
 
         // If token is a verb
-        if (Config.getInstance().pos_tagger.open_class_categories.verbs.includes(tag)) return lemmatize.verb(token);
+        if (Config.instance.pos_tagger.open_class_categories.verbs.includes(tag)) return lemmatize.verb(token);
         // If it's an adjective or adverb
-        else if (Config.getInstance().pos_tagger.open_class_categories.adjectives.includes(tag))
+        else if (Config.instance.pos_tagger.open_class_categories.adjectives.includes(tag))
             return lemmatize.adjective(token);
         // If it's a noun or foreign token
         else return lemmatize.noun(token);

@@ -15,8 +15,8 @@ export class ArticleService implements BaseService {
     private repository: ArticleRepository;
 
     constructor() {
-        this.bbcPage = Config.getInstance().bbcUrl;
-        this.cbsUrl = Config.getInstance().cbsUrl;
+        this.bbcPage = Config.instance.bbcUrl;
+        this.cbsUrl = Config.instance.cbsUrl;
         this.repository = new ArticleRepository();
     }
 

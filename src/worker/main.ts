@@ -29,7 +29,7 @@ class WorkerManager implements BaseManager {
     }
 
     public initialize(): void {
-        mongoose.connect(Config.getInstance().dbURI, {
+        mongoose.connect(Config.instance.dbURI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
             useFindAndModify: false,
@@ -41,19 +41,19 @@ class WorkerManager implements BaseManager {
 
     private registerWorkers(): void {
         this.articleWorker = new Worker('Articles', this.handleArticleJobs.bind(this), {
-            connection: { host: Config.getInstance().cacheHost },
+            connection: { host: Config.instance.cacheHost },
         });
         Logger.log('Registered Articles Worker');
         this.tagWorker = new Worker('Tags', this.handleTagJobs.bind(this), {
-            connection: { host: Config.getInstance().cacheHost },
+            connection: { host: Config.instance.cacheHost },
         });
         Logger.log('Registered Tags Worker');
         this.lemmaWorker = new Worker('Lemmas', this.handleLemmaJobs.bind(this), {
-            connection: { host: Config.getInstance().cacheHost },
+            connection: { host: Config.instance.cacheHost },
         });
         Logger.log('Registered Lemmas Worker');
         this.inverseIndexWorker = new Worker('Inverse Index', this.handleInverseIndexJobs.bind(this), {
-            connection: { host: Config.getInstance().cacheHost },
+            connection: { host: Config.instance.cacheHost },
         });
         Logger.log('Registered Inverse Index Worker');
     }

@@ -10,7 +10,7 @@ export class Config {
 
     private constructor() {}
 
-    public static getInstance(): Config {
+    public static get instance(): Config {
         if (!Config.configInstance) {
             Config.configInstance = new Config();
         }
@@ -62,6 +62,10 @@ export class Config {
                 foreign: ['FW'],
             },
         };
+    }
+
+    public get maxSampleSpace(): number {
+        return 8000;
     }
 
     public get cacheHost(): string {

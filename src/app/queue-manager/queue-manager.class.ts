@@ -22,7 +22,7 @@ export class QueueManager implements BaseManager {
     public indexQueue: Queue;
     private indexEvents: QueueEvents;
 
-    private host: string = Config.getInstance().cacheHost;
+    private host: string = Config.instance.cacheHost;
 
     private static _queue_instance: QueueManager;
 

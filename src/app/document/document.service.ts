@@ -1,35 +1,38 @@
 import { BaseService } from '@common/interfaces/service.base';
 import { DocumentRepository } from './document.repository';
-import { TfIdf } from 'natural';
-import { IDocument } from './document.model';
 import { NlpService } from '@nlp/nlp.service';
+import { StemRepository } from '@app/stem/stem.repository';
+import { Config } from '@app/config.class';
+import { Logger } from '@common/logger/logger.class';
 
 import path from 'path';
 import fs from 'fs-extra';
+import chalk from 'chalk';
 
 export class DocumentService implements BaseService {
     private readonly nlpService: NlpService;
     private readonly documentRepository: DocumentRepository;
+    private readonly stemRepository: StemRepository;
 
     constructor() {
         this.documentRepository = new DocumentRepository();
         this.nlpService = new NlpService();
+        this.stemRepository = new StemRepository();
     }
 
     public async train(documentsDirectory: string): Promise<void> {
         try {
             // Delete previous stems and documents
             await this.documentRepository.deleteMany({});
-
-            // Initialize TF-IDF calculator
-            const tfidf = new TfIdf();
+            await this.stemRepository.deleteMany({});
 
             // Get the categories from directory. ( Each subdirectory is a document category )
             const categories = fs.readdirSync(documentsDirectory);
 
             // Initialize document and stem variables.
-            let saved_stems = new Set();
-            let saved_documents: IDocument[] = [];
+            let saved_stems = new Set<string>();
+
+            let stem_appearances: { [key: string]: number } = {};
 
             // Parse every document in every category and store it in database.
             for (let i = 0; i < categories.length; i++) {
@@ -51,8 +54,13 @@ export class DocumentService implements BaseService {
                     const stemmed = this.nlpService.stemText(document_text);
 
                     stemmed.forEach((stem_name) => {
-                        if (!saved_stems.has(stem_name)) {
-                            if (!/^[0-9]*$/.test(stem_name)) saved_stems.add(stem_name);
+                        if (saved_stems.has(stem_name)) {
+                            stem_appearances[stem_name] = stem_appearances[stem_name] + 1;
+                        }
+
+                        if (!saved_stems.has(stem_name) && !/^[0-9]*$/.test(stem_name)) {
+                            saved_stems.add(stem_name);
+                            stem_appearances[stem_name] = 1;
                         }
                     });
 
@@ -63,41 +71,33 @@ export class DocumentService implements BaseService {
                         text: document_text,
                         stems: stemmed,
                     });
-
-                    saved_documents.push(document);
-
-                    // Add document to TF-IDF calculator for later use.
-                    tfidf.addDocument(stemmed);
                 }
             }
 
-            // Get all saved stems in alphabetical order
-            const stem_array = Array.from(saved_stems) as string[];
-            stem_array.sort();
-
-            // Clear set to free memory
+            // Clear unique stems to save memory
             saved_stems.clear();
 
-            console.log(`Extracted ${stem_array.length} stems from ${saved_documents.length} documents`);
+            // Get the best performing stems to create sample space S
+            const sampleSpace: string[] = [];
+            const maxStems = Object.values(stem_appearances).sort((a, b) => b - a);
+            maxStems.length =
+                Config.instance.maxSampleSpace <= maxStems.length ? Config.instance.maxSampleSpace : maxStems.length;
 
-            // Stem count variable to optimize performance.
-            const stem_count = stem_array.length;
-
-            stem_array.forEach((stem, i) => {
-                console.log(`Updating TF-IDF vectors for stem ${i + 1} of ${stem_count}: ${stem}`);
-                tfidf.tfidfs(stem, function (index, measure) {
-                    saved_documents[index].tfidf_vector.push(measure);
-                });
-            });
-
-            // Save documents to database
-            console.log('Saving documents to database...');
-            for (let i = 0; i < saved_documents.length; i++) {
-                const document = saved_documents[i];
-                await document.save();
+            // Create the sample space
+            for (const key in stem_appearances) {
+                if (maxStems.includes(stem_appearances[key])) {
+                    sampleSpace.push(key);
+                    maxStems.splice(maxStems.indexOf(stem_appearances[key]), 1);
+                }
             }
 
-            return;
+            await this.stemRepository.insertMany(
+                sampleSpace.map((stem) => {
+                    return { name: stem };
+                })
+            );
+
+            Logger.log(`Added ${sampleSpace.length} stems to sample space ${chalk.bold('S')}`);
         } catch (error) {
             throw error;
         }

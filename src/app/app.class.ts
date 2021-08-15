@@ -58,7 +58,7 @@ export class App {
 
     private async connectToDb(): Promise<void> {
         mongoose.connect(
-            Config.getInstance().dbURI,
+            Config.instance.dbURI,
             {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
