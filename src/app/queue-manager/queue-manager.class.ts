@@ -1,7 +1,7 @@
 import { BaseManager } from '@common/interfaces/manager.base';
 import { Logger } from '@common/logger/logger.class';
 import { Config } from '@app/config.class';
-import { BulkJobOptions, Queue, QueueEvents } from 'bullmq';
+import { BulkJobOptions, Job, Queue, QueueEvents } from 'bullmq';
 
 interface JobData {
     name: string;
@@ -21,6 +21,9 @@ export class QueueManager implements BaseManager {
 
     public indexQueue: Queue;
     private indexEvents: QueueEvents;
+
+    public trainQueue: Queue;
+    private trainEvents: QueueEvents;
 
     private host: string = Config.instance.cacheHost;
 
@@ -93,6 +96,20 @@ export class QueueManager implements BaseManager {
 
         this.indexEvents = new QueueEvents('Invers Index', { connection: { host: this.host } });
 
+        Logger.info('Initializing Training Queue');
+        this.trainQueue = new Queue('Training', {
+            connection: {
+                host: this.host,
+            },
+            defaultJobOptions: {
+                attempts: 3,
+                removeOnComplete: true,
+                removeOnFail: true,
+            },
+        });
+
+        this.trainEvents = new QueueEvents('Training', { connection: { host: this.host } });
+
         this.subscribeToEvents();
     }
 
@@ -104,7 +121,12 @@ export class QueueManager implements BaseManager {
         Logger.info('Subscribing to Lemma Queue events');
         this.lemmaEvents.on('drained', () => Logger.log('Lemmas Queue is empty'));
         Logger.info('Subscribing to Inverse Index Queue events');
-        this.indexQueue.on('drained', () => Logger.log('Lemmas Queue is empty'));
+        this.indexEvents.on('drained', () => Logger.log('Training Queue is empty'));
+        Logger.info('Subscribing to Training Queue events');
+        this.trainEvents.on('drained', () => Logger.log('Training is empty'));
+        this.trainEvents.on('completed', (id: string) => {
+            Logger.log(`Completed training job ${id}`);
+        });
     }
 
     public async addArticleJobs(jobData: JobData[]): Promise<void> {
@@ -121,5 +143,9 @@ export class QueueManager implements BaseManager {
 
     public async addInverseIndexJobs(jobData: JobData[]): Promise<void> {
         await this.indexQueue.addBulk(jobData);
+    }
+
+    public async addTrainingJobs(jobData: JobData[]): Promise<void> {
+        await this.trainQueue.addBulk(jobData);
     }
 }

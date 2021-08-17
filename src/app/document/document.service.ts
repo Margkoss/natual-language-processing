@@ -8,6 +8,8 @@ import { Logger } from '@common/logger/logger.class';
 import path from 'path';
 import fs from 'fs-extra';
 import chalk from 'chalk';
+import { TfIdf } from 'natural';
+import { QueueManager } from '@queue-manager/queue-manager.class';
 
 export class DocumentService implements BaseService {
     private readonly nlpService: NlpService;
@@ -42,12 +44,12 @@ export class DocumentService implements BaseService {
                 // Get all documents in category.
                 const documents = fs.readdirSync(category_path);
 
+                Logger.info(`Processing category : ${chalk.bold(category_name)}`);
+
                 // Process and store documents.
                 for (let j = 0; j < documents.length; j++) {
                     const document_name = documents[j];
                     const document_path = path.join(category_path, document_name);
-
-                    console.log(`Processing document ${category_name}/${document_name}`);
 
                     // Get document text and stem every word
                     const document_text = fs.readFileSync(document_path, 'utf8');
@@ -98,8 +100,38 @@ export class DocumentService implements BaseService {
             );
 
             Logger.log(`Added ${sampleSpace.length} stems to sample space ${chalk.bold('S')}`);
+
+            await QueueManager.instance.addTrainingJobs(
+                categories.map((category) => ({ name: category, data: { category }, options: { jobId: category } }))
+            );
         } catch (error) {
             throw error;
         }
+    }
+
+    public async addTfidfVectors(category: string): Promise<void> {
+        Logger.info(`Creating TF-IDF vectors for category: ${chalk.yellow(chalk.bold(category))}`);
+
+        const stems = await this.stemRepository.find({});
+        stems.sort();
+        const articles = await this.documentRepository.find({ category }, { _id: 1 });
+
+        const tfidf = new TfIdf();
+        articles.forEach((article) => {
+            article.tfidf_vector = [];
+            tfidf.addDocument(article.text);
+        });
+
+        for (const stem of stems.map((stem) => stem.name)) {
+            tfidf.tfidfs(stem, (index, measure) => {
+                articles[index].tfidf_vector.push(measure);
+            });
+        }
+
+        for (const article of articles) {
+            await article.save();
+        }
+
+        Logger.log(`Done creating TF-IDF vectors for category: ${chalk.yellow(chalk.bold(category))}`);
     }
 }

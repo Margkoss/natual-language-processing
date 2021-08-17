@@ -11,13 +11,16 @@ import { JSDOM } from 'jsdom';
 import { BaseManager } from '@common/interfaces/manager.base';
 import { NlpService } from '@nlp/nlp.service';
 import { LemmaService } from '@lemma/lemma.service';
+import { DocumentService } from '@app/document/document.service';
 
 class WorkerManager implements BaseManager {
     private repository: ArticleRepository;
     private nlpService: NlpService;
     private lemmaService: LemmaService;
+    private documentService: DocumentService;
 
     private articleWorker: Worker;
+    private trainWorker: Worker;
     private tagWorker: Worker;
     private lemmaWorker: Worker;
     private inverseIndexWorker: Worker;
@@ -26,6 +29,7 @@ class WorkerManager implements BaseManager {
         this.repository = new ArticleRepository();
         this.nlpService = new NlpService();
         this.lemmaService = new LemmaService();
+        this.documentService = new DocumentService();
     }
 
     public initialize(): void {
@@ -56,6 +60,11 @@ class WorkerManager implements BaseManager {
             connection: { host: Config.instance.cacheHost },
         });
         Logger.log('Registered Inverse Index Worker');
+
+        this.trainWorker = new Worker('Training', this.handleTrainingJobs.bind(this), {
+            connection: { host: Config.instance.cacheHost },
+        });
+        Logger.log('Registered Training Worker');
     }
 
     private async handleArticleJobs(job: Job): Promise<void> {
@@ -161,6 +170,12 @@ class WorkerManager implements BaseManager {
         Logger.log(`Handling Inverse Index job -> ${job.name} on queue ${job.queueName}`);
 
         await this.nlpService.TFIDFeachLemma(id);
+    }
+
+    private async handleTrainingJobs(job: Job): Promise<void> {
+        const { category } = job.data;
+
+        await this.documentService.addTfidfVectors(category);
     }
 }
 
