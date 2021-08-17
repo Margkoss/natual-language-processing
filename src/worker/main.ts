@@ -15,10 +15,13 @@ import { DocumentService } from '@app/document/document.service';
 import { TfIdf } from 'natural';
 import { DocumentRepository } from '@app/document/document.repository';
 import chalk from 'chalk';
+import { IDocument } from '@app/document/document.model';
+import { StemRepository } from '@app/stem/stem.repository';
 
 class WorkerManager implements BaseManager {
     private repository: ArticleRepository;
     private documentRepository: DocumentRepository;
+    private stemRepository: StemRepository;
     private nlpService: NlpService;
     private lemmaService: LemmaService;
     private documentService: DocumentService;
@@ -31,9 +34,13 @@ class WorkerManager implements BaseManager {
     private lemmaWorker: Worker;
     private inverseIndexWorker: Worker;
 
+    private docs: IDocument[];
+    private stems: string[];
+
     constructor() {
         this.repository = new ArticleRepository();
         this.documentRepository = new DocumentRepository();
+        this.stemRepository = new StemRepository();
 
         this.nlpService = new NlpService();
         this.lemmaService = new LemmaService();
@@ -50,6 +57,8 @@ class WorkerManager implements BaseManager {
         });
         mongoose.Promise = global.Promise;
 
+        Logger.log(`Starting...`);
+
         const start = Date.now();
         await this.createTfidf();
         Logger.log(`Created tfidf in ${chalk.yellow((Date.now() - start) / 1000)} seconds`);
@@ -58,9 +67,12 @@ class WorkerManager implements BaseManager {
     }
 
     private async createTfidf(): Promise<void> {
-        const docs = await this.documentRepository.find({}, { name: 0, text: 0, category: 0, tfidf_vector: 0 });
+        this.docs = await this.documentRepository.find({}, { name: 0, text: 0, category: 0, tfidf_vector: 0 });
+        const res = await this.stemRepository.find({});
+        this.stems = res.map((stem) => stem.name);
+        this.stems.sort();
 
-        docs.forEach((doc) => this.tfidf.addDocument(doc.stems));
+        this.docs.forEach((doc) => this.tfidf.addDocument(doc.stems));
     }
 
     private registerWorkers(): void {
@@ -195,7 +207,7 @@ class WorkerManager implements BaseManager {
     private async handleTrainingJobs(job: Job): Promise<void> {
         const { id } = job.data;
 
-        await this.documentService.addTfidfVectors(this.tfidf, id);
+        await this.documentService.addTfidfVectors(this.stems, this.docs, this.tfidf, id);
     }
 }
 

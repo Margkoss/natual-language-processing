@@ -3,6 +3,7 @@ import { Helpers } from '@common/helpers/helpers.namespace';
 import { BaseManager } from '@common/interfaces/manager.base';
 import { Logger } from '@common/logger/logger.class';
 import { LemmaService } from '@lemma/lemma.service';
+import { QueueManager } from '@queue-manager/queue-manager.class';
 import path from 'path';
 
 export class CommandsManager implements BaseManager {
@@ -60,6 +61,10 @@ export class CommandsManager implements BaseManager {
 
             if (command.startsWith('exit')) {
                 process.exit(0);
+            }
+
+            if (command.startsWith('drain')) {
+                await QueueManager.instance.drainQueues();
             }
         });
 

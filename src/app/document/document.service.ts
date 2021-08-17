@@ -10,6 +10,8 @@ import fs from 'fs-extra';
 import chalk from 'chalk';
 import { TfIdf } from 'natural';
 import { QueueManager } from '@queue-manager/queue-manager.class';
+import { IDocument } from './document.model';
+import { IStem } from '@app/stem/stem.model';
 
 export class DocumentService implements BaseService {
     private readonly nlpService: NlpService;
@@ -109,35 +111,21 @@ export class DocumentService implements BaseService {
         }
     }
 
-    public async addTfidfVectors(tfidf: TfIdf, articleId: string): Promise<void> {
-        /**
-         *
-         *
-         * TODO -> -> -> !!! Add index to document model to ensure that article index is the same always
-         *
-         */
-
+    public async addTfidfVectors(stems: string[], docs: IDocument[], tfidf: TfIdf, articleId: string): Promise<void> {
         const article = await this.documentRepository.findOne({ _id: articleId }, { _id: 1 });
         Logger.info(
             `Creating TF-IDF vectors for article: ${chalk.yellow(chalk.bold(`${article.category}/${article.name}`))}`
         );
-        const articles = await this.documentRepository.find(
-            {},
-            { _id: 1, text: 0, category: 0, name: 0, tfidf_vector: 0 }
-        );
 
         let articleIndex: number = 0;
-        for (let i = 0; i < articles.length; i++) {
-            if (articles[i]._id === articleId) {
+        for (let i = 0; i < docs.length; i++) {
+            if (docs[i]._id === articleId) {
                 articleIndex = i;
                 break;
             }
         }
 
-        const stems = await this.stemRepository.find({});
-        stems.sort();
-
-        for (const stem of stems.map((stem) => stem.name)) {
+        for (const stem of stems) {
             // @ts-ignore
             const measure: number = tfidf.tfidf(stem, articleIndex);
             article.tfidf_vector.push(measure);

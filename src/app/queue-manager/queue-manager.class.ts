@@ -128,7 +128,15 @@ export class QueueManager implements BaseManager {
         this.indexEvents.on('drained', () => Logger.log('Training Queue is empty'));
         Logger.info('Subscribing to Training Queue events');
         this.trainEvents.on('drained', () => Logger.log('Training is empty'));
-        this.trainEvents.on('completed', (job: Job) => Logger.log(`Completed training job on ${job.queueName}`));
+        this.trainEvents.on('completed', (job: Job) => Logger.log(`Completed training job on ${job}`));
+    }
+
+    public async drainQueues(): Promise<void> {
+        await this.articleQueue.drain();
+        await this.tagQueue.drain();
+        await this.trainQueue.drain();
+        await this.indexQueue.drain();
+        await this.lemmaQueue.drain();
     }
 
     public async addArticleJobs(jobData: JobData[]): Promise<void> {

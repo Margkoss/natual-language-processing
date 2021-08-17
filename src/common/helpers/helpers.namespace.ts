@@ -29,6 +29,7 @@ Available commands:
         '-> Displays help information about commands'
     )}
 - ${chalk.yellow('train')} <path to directory>                  ${chalk.bold('-> Trains with the directory given')} 
+- ${chalk.yellow('drain')}                                       ${chalk.bold('-> Drains the task queues')}
 - ${chalk.yellow('exit')}                                       ${chalk.bold('-> Exits the program')}
 
                 `;
