@@ -39,7 +39,7 @@ export class QueueManager implements BaseManager {
         return this._queue_instance;
     }
 
-    public initialize(): void {
+    public async initialize(): Promise<void> {
         Logger.info('Initializing Article Queue');
         this.articleQueue = new Queue('Articles', {
             connection: {
@@ -51,6 +51,7 @@ export class QueueManager implements BaseManager {
                 removeOnFail: true,
             },
         });
+        await this.articleQueue.drain();
 
         this.articleEvents = new QueueEvents('Articles', { connection: { host: this.host } });
 
@@ -65,6 +66,7 @@ export class QueueManager implements BaseManager {
                 removeOnFail: true,
             },
         });
+        await this.tagQueue.drain();
 
         this.tagEvents = new QueueEvents('Tags', { connection: { host: this.host } });
 
@@ -79,7 +81,7 @@ export class QueueManager implements BaseManager {
                 removeOnFail: true,
             },
         });
-
+        await this.lemmaQueue.drain();
         this.lemmaEvents = new QueueEvents('Lemmas', { connection: { host: this.host } });
 
         Logger.info('Initializing Inverse Index Queue');
@@ -94,6 +96,8 @@ export class QueueManager implements BaseManager {
             },
         });
 
+        await this.indexQueue.drain();
+
         this.indexEvents = new QueueEvents('Invers Index', { connection: { host: this.host } });
 
         Logger.info('Initializing Training Queue');
@@ -107,7 +111,7 @@ export class QueueManager implements BaseManager {
                 removeOnFail: true,
             },
         });
-
+        await this.trainQueue.drain();
         this.trainEvents = new QueueEvents('Training', { connection: { host: this.host } });
 
         this.subscribeToEvents();
@@ -124,7 +128,7 @@ export class QueueManager implements BaseManager {
         this.indexEvents.on('drained', () => Logger.log('Training Queue is empty'));
         Logger.info('Subscribing to Training Queue events');
         this.trainEvents.on('drained', () => Logger.log('Training is empty'));
-        this.trainEvents.on('completed', (job: Job) => Logger.log(`Completed training job ${job.data.id}`));
+        this.trainEvents.on('completed', (job: Job) => Logger.log(`Completed training job on ${job.queueName}`));
     }
 
     public async addArticleJobs(jobData: JobData[]): Promise<void> {

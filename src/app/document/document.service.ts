@@ -118,7 +118,13 @@ export class DocumentService implements BaseService {
          */
 
         const article = await this.documentRepository.findOne({ _id: articleId }, { _id: 1 });
-        const articles = await this.documentRepository.find({});
+        Logger.info(
+            `Creating TF-IDF vectors for article: ${chalk.yellow(chalk.bold(`${article.category}/${article.name}`))}`
+        );
+        const articles = await this.documentRepository.find(
+            {},
+            { _id: 1, text: 0, category: 0, name: 0, tfidf_vector: 0 }
+        );
 
         let articleIndex: number = 0;
         for (let i = 0; i < articles.length; i++) {
@@ -128,15 +134,12 @@ export class DocumentService implements BaseService {
             }
         }
 
-        Logger.info(
-            `Creating TF-IDF vectors for article: ${chalk.yellow(chalk.bold(`${article.category}/${article.name}`))}`
-        );
-
         const stems = await this.stemRepository.find({});
         stems.sort();
 
         for (const stem of stems.map((stem) => stem.name)) {
-            const measure = tfidf.tfidf(stem, articleIndex);
+            // @ts-ignore
+            const measure: number = tfidf.tfidf(stem, articleIndex);
             article.tfidf_vector.push(measure);
         }
 
