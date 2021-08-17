@@ -101,37 +101,51 @@ export class DocumentService implements BaseService {
 
             Logger.log(`Added ${sampleSpace.length} stems to sample space ${chalk.bold('S')}`);
 
-            await QueueManager.instance.addTrainingJobs(
-                categories.map((category) => ({ name: category, data: { category }, options: { jobId: category } }))
-            );
+            const documentIds = await this.documentRepository.listOfIds({});
+
+            await QueueManager.instance.addTrainingJobs(documentIds.map((id) => ({ name: id, data: { id } })));
         } catch (error) {
             throw error;
         }
     }
 
-    public async addTfidfVectors(category: string): Promise<void> {
-        Logger.info(`Creating TF-IDF vectors for category: ${chalk.yellow(chalk.bold(category))}`);
+    public async addTfidfVectors(tfidf: TfIdf, articleId: string): Promise<void> {
+        /**
+         *
+         *
+         * TODO -> -> -> !!! Add index to document model to ensure that article index is the same always
+         *
+         */
+
+        const article = await this.documentRepository.findOne({ _id: articleId }, { _id: 1 });
+        const articles = await this.documentRepository.find({});
+
+        let articleIndex: number = 0;
+        for (let i = 0; i < articles.length; i++) {
+            if (articles[i]._id === articleId) {
+                articleIndex = i;
+                break;
+            }
+        }
+
+        Logger.info(
+            `Creating TF-IDF vectors for article: ${chalk.yellow(chalk.bold(`${article.category}/${article.name}`))}`
+        );
 
         const stems = await this.stemRepository.find({});
         stems.sort();
-        const articles = await this.documentRepository.find({ category }, { _id: 1 });
-
-        const tfidf = new TfIdf();
-        articles.forEach((article) => {
-            article.tfidf_vector = [];
-            tfidf.addDocument(article.text);
-        });
 
         for (const stem of stems.map((stem) => stem.name)) {
-            tfidf.tfidfs(stem, (index, measure) => {
-                articles[index].tfidf_vector.push(measure);
-            });
+            const measure = tfidf.tfidf(stem, articleIndex);
+            article.tfidf_vector.push(measure);
         }
 
-        for (const article of articles) {
-            await article.save();
-        }
+        await article.save();
 
-        Logger.log(`Done creating TF-IDF vectors for category: ${chalk.yellow(chalk.bold(category))}`);
+        Logger.log(
+            `Done creating TF-IDF vectors for article: ${chalk.yellow(
+                chalk.bold(`${article.category}/${article.name}`)
+            )}`
+        );
     }
 }

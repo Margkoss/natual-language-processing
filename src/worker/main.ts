@@ -12,12 +12,18 @@ import { BaseManager } from '@common/interfaces/manager.base';
 import { NlpService } from '@nlp/nlp.service';
 import { LemmaService } from '@lemma/lemma.service';
 import { DocumentService } from '@app/document/document.service';
+import { TfIdf } from 'natural';
+import { DocumentRepository } from '@app/document/document.repository';
+import chalk from 'chalk';
 
 class WorkerManager implements BaseManager {
     private repository: ArticleRepository;
+    private documentRepository: DocumentRepository;
     private nlpService: NlpService;
     private lemmaService: LemmaService;
     private documentService: DocumentService;
+
+    private tfidf: TfIdf;
 
     private articleWorker: Worker;
     private trainWorker: Worker;
@@ -27,12 +33,16 @@ class WorkerManager implements BaseManager {
 
     constructor() {
         this.repository = new ArticleRepository();
+        this.documentRepository = new DocumentRepository();
+
         this.nlpService = new NlpService();
         this.lemmaService = new LemmaService();
         this.documentService = new DocumentService();
+
+        this.tfidf = new TfIdf();
     }
 
-    public initialize(): void {
+    public async initialize(): Promise<void> {
         mongoose.connect(Config.instance.dbURI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
@@ -40,7 +50,17 @@ class WorkerManager implements BaseManager {
         });
         mongoose.Promise = global.Promise;
 
+        const start = Date.now();
+        await this.createTfidf();
+        Logger.log(`Created tfidf in ${chalk.yellow((Date.now() - start) / 1000)} seconds`);
+
         this.registerWorkers();
+    }
+
+    private async createTfidf(): Promise<void> {
+        const docs = await this.documentRepository.find({}, { name: 0, text: 0, category: 0, tfidf_vector: 0 });
+
+        docs.forEach((doc) => this.tfidf.addDocument(doc.stems));
     }
 
     private registerWorkers(): void {
@@ -173,9 +193,9 @@ class WorkerManager implements BaseManager {
     }
 
     private async handleTrainingJobs(job: Job): Promise<void> {
-        const { category } = job.data;
+        const { id } = job.data;
 
-        await this.documentService.addTfidfVectors(category);
+        await this.documentService.addTfidfVectors(this.tfidf, id);
     }
 }
 
