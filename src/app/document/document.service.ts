@@ -113,6 +113,12 @@ export class DocumentService implements BaseService {
 
     public async addTfidfVectors(stems: string[], docs: IDocument[], tfidf: TfIdf, articleId: string): Promise<void> {
         const article = await this.documentRepository.findOne({ _id: articleId }, { _id: 1 });
+
+        if (article.tfidf_vector.length) {
+            Logger.warn(`Article already has tfidf vector`);
+            return;
+        }
+
         Logger.info(
             `Creating TF-IDF vectors for article: ${chalk.yellow(chalk.bold(`${article.category}/${article.name}`))}`
         );
