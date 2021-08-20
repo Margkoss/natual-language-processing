@@ -29,7 +29,7 @@ export class App {
             // this.registerCronJobs();
 
             CommandsManager.instance.initialize();
-            QueueManager.instance.initialize();
+            // QueueManager.instance.initialize();
 
             Logger.log('Application started, waiting for tasks');
         } catch (e) {
