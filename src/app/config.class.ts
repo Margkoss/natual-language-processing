@@ -19,7 +19,7 @@ export class Config {
     }
 
     public get dbURI(): string {
-        return `mongodb://localhost:27017/nlp`;
+        return `mongodb://ubuntu:27017/nlp`;
     }
 
     public get bbcUrl(): string {
@@ -69,6 +69,6 @@ export class Config {
     }
 
     public get cacheHost(): string {
-        return 'localhost';
+        return 'ubuntu';
     }
 }

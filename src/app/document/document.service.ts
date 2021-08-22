@@ -13,6 +13,9 @@ import { QueueManager } from '@queue-manager/queue-manager.class';
 import { IDocument } from './document.model';
 import { IStem } from '@app/stem/stem.model';
 
+import prettyMilliseconds from 'pretty-ms';
+import cliProgress from 'cli-progress';
+
 export class DocumentService implements BaseService {
     private readonly nlpService: NlpService;
     private readonly documentRepository: DocumentRepository;
@@ -144,5 +147,72 @@ export class DocumentService implements BaseService {
                 chalk.bold(`${article.category}/${article.name}`)
             )}`
         );
+    }
+
+    public async createTfidfFromDocument(documentText: string): Promise<number[]> {
+        // Create tfIdf from all documents
+        const tfidf = new TfIdf();
+
+        // ../news/20news-bydate-test/alt.atheism/53068
+        const cursor = this.documentRepository.model
+            .find({}, { text: 0, name: 0, category: 0, _id: 0, __v: 0, tfidf_vector: 0 })
+            .lean()
+            .cursor();
+
+        let start = Date.now();
+
+        for await (const doc of cursor) {
+            tfidf.addDocument(doc.stems);
+        }
+
+        const stemmed = this.nlpService.stemText(documentText);
+        tfidf.addDocument(stemmed);
+
+        Logger.warn(`Finished creating tfidf in ${prettyMilliseconds(Date.now() - start)}`);
+
+        const sampleSpace = await (await this.stemRepository.find({})).map((stem) => stem.name);
+
+        const tfidfVector: number[] = [];
+        const docIndex = await this.documentRepository.model.countDocuments();
+
+        for (const stem of sampleSpace) {
+            // @ts-ignore
+            tfidfVector.push(tfidf.tfidf(stem, docIndex));
+        }
+
+        return tfidfVector;
+    }
+
+    public async categorizeDocument(docPath: string): Promise<void> {
+        const start = Date.now();
+        const docText = fs.readFileSync(path.resolve(docPath), 'utf8');
+
+        const vector = await this.createTfidfFromDocument(docText);
+
+        const cursor = this.documentRepository.model
+            .find({}, { text: 0, name: 0, category: 0, __v: 0 })
+            .lean()
+            .cursor();
+
+        // const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+
+        // bar.start(await this.documentRepository.model.countDocuments(), 1);
+
+        let maxSimilarity: { _id: string; val: number } = { _id: '', val: 0 };
+
+        let i = 1;
+        for await (const doc of cursor) {
+            i++;
+            // bar.update(i);
+
+            const similarity = this.nlpService.getSimilarity(vector, doc.tfidf_vector);
+            if (similarity > maxSimilarity.val) {
+                maxSimilarity._id = doc._id;
+                maxSimilarity.val = similarity;
+            }
+        }
+        // bar.stop();
+        console.log(maxSimilarity);
+        Logger.log(`Finished in ${prettyMilliseconds(Date.now() - start)}`);
     }
 }

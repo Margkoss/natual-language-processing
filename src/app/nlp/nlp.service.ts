@@ -2,13 +2,18 @@ import { ArticleRepository } from '@article/article.repository';
 import { BaseService } from '@common/interfaces/service.base';
 import { Config } from '@app/config.class';
 import { BrillPOSTagger, Lexicon, RuleSet, WordTokenizer, TfIdf, PorterStemmer } from 'natural';
-// @ts-ignore
-import lemmatize from 'wink-lemmatizer';
 import { IArticle, POSTag } from '@article/article.model';
 import { QueueManager } from '@queue-manager/queue-manager.class';
 import { Logger } from '@common/logger/logger.class';
 import { LemmaRepository } from '@lemma/lemma.repository';
 import { LemmaService } from '@lemma/lemma.service';
+
+// @ts-ignore
+import lemmatize from 'wink-lemmatizer';
+// @ts-ignore
+import cosSimilarity from 'cos-similarity';
+// @ts-ignore
+import jaccard from 'jaccard';
 
 export class NlpService implements BaseService {
     private articleRepository: ArticleRepository;
@@ -116,5 +121,14 @@ export class NlpService implements BaseService {
     public stemText(text: string): string[] {
         const tokenizedText = this.tokenizer.tokenize(text);
         return tokenizedText.map((word) => PorterStemmer.stem(word.toLowerCase()));
+    }
+
+    public getSimilarity(doc1: number[], doc2: number[]): number {
+        const cosineSimilarityIndex = cosSimilarity(doc1, doc2);
+        const jaccardSimilarityIndex = jaccard.index(doc1, doc2);
+
+        console.log(cosineSimilarityIndex, jaccardSimilarityIndex);
+
+        return (cosineSimilarityIndex + jaccardSimilarityIndex) / 2;
     }
 }

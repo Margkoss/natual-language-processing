@@ -10,6 +10,10 @@ export class DocumentRepository extends EntityRepository<IDocument> {
         this.document = DocumentModel;
     }
 
+    public get model(): Model<IDocument> {
+        return this.document;
+    }
+
     public async listOfIds(
         filterQuery: FilterQuery<IDocument>,
         projection?: Record<string, unknown>,
