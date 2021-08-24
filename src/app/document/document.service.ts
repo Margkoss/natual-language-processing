@@ -11,7 +11,6 @@ import chalk from 'chalk';
 import { TfIdf } from 'natural';
 import { QueueManager } from '@queue-manager/queue-manager.class';
 import { IDocument } from './document.model';
-import { IStem } from '@app/stem/stem.model';
 
 import prettyMilliseconds from 'pretty-ms';
 import cliProgress from 'cli-progress';
@@ -189,7 +188,7 @@ export class DocumentService implements BaseService {
         const start = Date.now();
         const docText = fs.readFileSync(path.resolve(docPath), 'utf8');
 
-        const vector = await this.createTfidfFromDocument(docText);
+        const stemmed = this.nlpService.stemText(docText);
 
         const cursor = this.documentRepository.model
             .find({}, { text: 0, name: 0, category: 0, __v: 0 })
@@ -207,12 +206,15 @@ export class DocumentService implements BaseService {
             i++;
             bar.update(i);
 
-            const similarity = this.nlpService.getSimilarity(vector, doc.tfidf_vector);
+            const similarity = this.nlpService.getSimilarity(stemmed, doc.stems);
             if (similarity > maxSimilarity.val) {
                 maxSimilarity._id = doc._id;
                 maxSimilarity.val = similarity;
             }
         }
+
+        bar.stop();
+        console.log('\n\n');
 
         const mostSimilarArticle = await this.documentRepository.findOne({ _id: maxSimilarity._id });
 

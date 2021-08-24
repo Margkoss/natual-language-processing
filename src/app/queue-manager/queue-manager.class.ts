@@ -2,6 +2,7 @@ import { BaseManager } from '@common/interfaces/manager.base';
 import { Logger } from '@common/logger/logger.class';
 import { Config } from '@app/config.class';
 import { BulkJobOptions, Job, Queue, QueueEvents } from 'bullmq';
+import chalk from 'chalk';
 
 interface JobData {
     name: string;
@@ -128,7 +129,7 @@ export class QueueManager implements BaseManager {
         this.indexEvents.on('drained', () => Logger.log('Training Queue is empty'));
         Logger.info('Subscribing to Training Queue events');
         this.trainEvents.on('drained', () => Logger.log('Training is empty'));
-        this.trainEvents.on('completed', (job: Job) => Logger.log(`Completed training job on ${job}`));
+        this.trainEvents.on('completed', (job: any) => Logger.log(`Finished documents job: ${chalk.bold(job.jobId)}`));
     }
 
     public async drainQueues(): Promise<void> {

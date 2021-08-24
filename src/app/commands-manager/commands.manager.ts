@@ -70,6 +70,12 @@ export class CommandsManager implements BaseManager {
                 }
 
                 await FilesManager.instance.extractDatabaseFile(args[0] as 'article' | 'lemma' | 'stem' | 'document');
+            }else if (command.startsWith('categorize')){
+                const documentDirectory = command.split(' ')[1].trim();
+                
+
+                await this.documentService.categorizeDocument(path.resolve(documentDirectory));
+
             } else {
                 Logger.error(`Command "${command}" not recognized`);
             }

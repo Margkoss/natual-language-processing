@@ -12,8 +12,8 @@ import { LemmaService } from '@lemma/lemma.service';
 import lemmatize from 'wink-lemmatizer';
 // @ts-ignore
 import cosSimilarity from 'cos-similarity';
-// @ts-ignore
-import jaccard from 'jaccard';
+
+import { jaccard, tanimoto } from 'wuzzy';
 
 export class NlpService implements BaseService {
     private articleRepository: ArticleRepository;
@@ -123,10 +123,11 @@ export class NlpService implements BaseService {
         return tokenizedText.map((word) => PorterStemmer.stem(word.toLowerCase()));
     }
 
-    public getSimilarity(doc1: number[], doc2: number[]): number {
-        const cosineSimilarityIndex = cosSimilarity(doc1, doc2);
-        const jaccardSimilarityIndex = jaccard.index(doc1, doc2);
+    public getSimilarity(doc1: string[], doc2: string[]): number {
+        const tanimotoSimilarityIndex = tanimoto(doc1, doc2);
 
-        return (cosineSimilarityIndex + jaccardSimilarityIndex) / 2;
+        const jaccardSimilarityIndex = jaccard(doc1, doc2);
+
+        return (tanimotoSimilarityIndex + jaccardSimilarityIndex) / 2;
     }
 }
