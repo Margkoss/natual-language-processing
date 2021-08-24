@@ -128,7 +128,7 @@ export class DocumentService implements BaseService {
 
         let articleIndex: number = 0;
         for (let i = 0; i < docs.length; i++) {
-            if (docs[i]._id === articleId) {
+            if (docs[i]._id == articleId) {
                 articleIndex = i;
                 break;
             }
@@ -150,6 +150,8 @@ export class DocumentService implements BaseService {
     }
 
     public async createTfidfFromDocument(documentText: string): Promise<number[]> {
+        Logger.info(`Creating TFIDF for document`);
+
         // Create tfIdf from all documents
         const tfidf = new TfIdf();
 
@@ -194,16 +196,16 @@ export class DocumentService implements BaseService {
             .lean()
             .cursor();
 
-        // const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+        const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-        // bar.start(await this.documentRepository.model.countDocuments(), 1);
+        bar.start(await this.documentRepository.model.countDocuments(), 1);
 
         let maxSimilarity: { _id: string; val: number } = { _id: '', val: 0 };
 
         let i = 1;
         for await (const doc of cursor) {
             i++;
-            // bar.update(i);
+            bar.update(i);
 
             const similarity = this.nlpService.getSimilarity(vector, doc.tfidf_vector);
             if (similarity > maxSimilarity.val) {
@@ -211,8 +213,11 @@ export class DocumentService implements BaseService {
                 maxSimilarity.val = similarity;
             }
         }
-        // bar.stop();
-        console.log(maxSimilarity);
+
+        const mostSimilarArticle = await this.documentRepository.findOne({ _id: maxSimilarity._id });
+
+        console.table({ mostSimilarArticle: mostSimilarArticle.name, category: mostSimilarArticle.category });
+
         Logger.log(`Finished in ${prettyMilliseconds(Date.now() - start)}`);
     }
 }

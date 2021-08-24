@@ -127,8 +127,6 @@ export class NlpService implements BaseService {
         const cosineSimilarityIndex = cosSimilarity(doc1, doc2);
         const jaccardSimilarityIndex = jaccard.index(doc1, doc2);
 
-        console.log(cosineSimilarityIndex, jaccardSimilarityIndex);
-
         return (cosineSimilarityIndex + jaccardSimilarityIndex) / 2;
     }
 }

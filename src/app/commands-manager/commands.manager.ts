@@ -50,9 +50,7 @@ export class CommandsManager implements BaseManager {
             } else if (command.startsWith('train')) {
                 const documentsDirectory = command.split(' ')[1].trim();
 
-                // this.documentService.train(path.resolve(documentsDirectory));
-
-                await this.documentService.categorizeDocument(documentsDirectory);
+                this.documentService.train(path.resolve(documentsDirectory));
             } else if (command.startsWith('exit')) {
                 process.exit(0);
             } else if (command.startsWith('drain')) {

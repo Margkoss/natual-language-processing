@@ -19,6 +19,8 @@ export class DocumentRepository extends EntityRepository<IDocument> {
         projection?: Record<string, unknown>,
         options?: QueryOptions
     ): Promise<string[]> {
-        return await this.document.find(filterQuery, { _id: 0, __v: 0, ...projection }, options).distinct('_id');
+        return (await this.document.find(filterQuery, { ...projection }, options).distinct('_id')).map((el) =>
+            el.toString()
+        );
     }
 }

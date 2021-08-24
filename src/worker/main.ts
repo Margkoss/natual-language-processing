@@ -67,7 +67,7 @@ class WorkerManager implements BaseManager {
     }
 
     private async createTfidf(): Promise<void> {
-        this.docs = await this.documentRepository.find({}, { name: 0, text: 0, category: 0, tfidf_vector: 0 });
+        this.docs = await this.documentRepository.find({}, { name: 0, text: 0, category: 0, tfidf_vector: 0, _id: 1 });
         const res = await this.stemRepository.find({});
         this.stems = res.map((stem) => stem.name);
         this.stems.sort();
