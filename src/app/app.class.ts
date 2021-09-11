@@ -26,7 +26,7 @@ export class App {
             console.log(Helpers.landingText);
 
             await this.connectToDb();
-            // this.registerCronJobs();
+            this.registerCronJobs();
 
             CommandsManager.instance.initialize();
             QueueManager.instance.initialize();
